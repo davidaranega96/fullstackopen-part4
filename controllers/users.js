@@ -5,7 +5,6 @@ const bcrypt = require('bcrypt')
 userRouter.get('', async (request, response, next) => {
   try {
     const users = await User.find({})
-
     if (users) {
       response.json(users)
     } else {
@@ -20,8 +19,12 @@ userRouter.post('', async (request, response, next) => {
   try {
     const { username, name, password } = request.body
 
-    if (!password || !username) {
+    if (!password) {
       return response.status(400).json({ error: 'Password and username required' })
+    }
+
+    if (password.length < 3) {
+      return response.status(400).json({ error: 'Password minimum length is 3' })
     }
 
     const saltRounds = 10
