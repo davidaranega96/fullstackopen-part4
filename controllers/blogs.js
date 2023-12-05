@@ -20,11 +20,18 @@ blogRouter.get('', async (request, response, next) => {
 
 blogRouter.post('', async (request, response, next) => {
   try {
-    const firstUser = await User.findOne({})
-    const newBlog = { ...request.body, user: firstUser.id }
-    const blog = new Blog(newBlog)
-    await helpers.addBlogToUser(blog, firstUser)
+    const decodedToken = helpers.decodeBearerToken(request)
+    if (!decodedToken) {
+      response.status(401).send({ error: 'token invalid' })
+      return
+    }
+    const user = await User.findById(decodedToken.id)
+    const blog = new Blog({ ...request.body, user: user.id })
+
     const savedBlog = await blog.save()
+    user.blogs = user.blogs.concat(savedBlog._id)
+    await user.save()
+
     response.status(201).json(savedBlog)
   } catch (error){
     next(error)

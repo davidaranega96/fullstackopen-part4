@@ -1,21 +1,20 @@
-const User = require('../models/user')
-const logger = require('../utils/logger')
+const jwt = require('jsonwebtoken')
 
-const addBlogToUser = async (blog, user) => {
-  const userBlogs = user.blogs
-  userBlogs.push(blog.id)
-  
-  const updatedUser = {
-    ...user, blogs: userBlogs
+const getTokenFrom = request => {
+  const authorization = request.get('authorization')
+  if (authorization && authorization.startsWith('Bearer ')) {
+    return authorization.replace('Bearer ', '')
   }
+  return null
+}
 
+const decodeBearerToken = request => {
+  const encodedToken = getTokenFrom(request)
   try {
-    await User.findByIdAndUpdate(
-      user.id, updatedUser
-    )
-  } catch (error) {
-    logger.error(error)
+    return jwt.verify(encodedToken, process.env.SECRET)
+  } catch {
+    return null
   }
 }
 
-module.exports = { addBlogToUser }
+module.exports = { decodeBearerToken }

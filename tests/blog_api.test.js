@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const helpers = require('./helpers')
 
 const api = supertest(app)
 
@@ -44,7 +46,7 @@ describe('GET methods', () => {
   })
 })
   
-describe('POST methods', () => {
+describe('blog POST methods', () => {
   test('normal case', async () => {
     const firstResponse = await api.get('/api/blogs')
     const initialLength = firstResponse.body.length
@@ -56,7 +58,9 @@ describe('POST methods', () => {
       likes: 93
     }
 
-    await api.post('/api/blogs').send(extraBlog)
+    const token = await helpers.getTestUserToken()
+    const response = await api.post('/api/blogs').send(extraBlog).set('Authorization', `Bearer ${token}`)
+    expect(response.status).toBe(201)
 
     const secondResponse = await api.get('/api/blogs')
     expect(secondResponse.body).toHaveLength(initialLength + 1)
@@ -70,9 +74,21 @@ describe('POST methods', () => {
       author: 'Me myself and I',
       likes: 99
     }
-  
-    const response = await api.post('/api/blogs').send(wrongBlog)
+    const token = await helpers.getTestUserToken()
+    const response = await api.post('/api/blogs').send(wrongBlog).set('Authorization', `Bearer ${token}`)
     expect(response.status).toBe(400)
+  })
+
+  test('with incorrect token response is 401', async () => {
+    const extraBlog = {
+      title: 'test blog is added',
+      author: 'Tes Ter',
+      url: 'test.test.com',
+      likes: 93
+    }
+    const token = 'wrongtoken'
+    const response = await api.post('/api/blogs').send(extraBlog).set('Authorization', `Bearer ${token}`)
+    expect(response.status).toBe(401)
   })
 })
 
@@ -126,6 +142,11 @@ beforeEach(async () => {
 
 afterEach(() => {
   jest.restoreAllMocks()
+})
+
+beforeAll(async () => {
+  await User.deleteMany({})
+  await new User(helpers.testUser).save()
 })
 
 afterAll(async () => {
