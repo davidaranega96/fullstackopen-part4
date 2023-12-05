@@ -1,10 +1,12 @@
 const blogRouter = require('express').Router()
 const Blog = require('../models/blog')
+const User = require('../models/user')
+const helpers = require('./helpers')
 const mongoose = require('mongoose')
 
 blogRouter.get('', async (request, response, next) => {
   try {
-    const blogs = await Blog.find({})
+    const blogs = await Blog.find({}).populate('user', { name: 1, username: 1 })
 
     if (blogs) {
       response.json(blogs)
@@ -18,7 +20,10 @@ blogRouter.get('', async (request, response, next) => {
 
 blogRouter.post('', async (request, response, next) => {
   try {
-    const blog = new Blog(request.body)
+    const firstUser = await User.findOne({})
+    const newBlog = { ...request.body, user: firstUser.id }
+    const blog = new Blog(newBlog)
+    await helpers.addBlogToUser(blog, firstUser)
     const savedBlog = await blog.save()
     response.status(201).json(savedBlog)
   } catch (error){
