@@ -95,14 +95,16 @@ describe('blog POST methods', () => {
 describe('DELETE methods', () => {
   test('normal case', async () => {
     const blogToDeleteTitle = 'How to start a web app'
+    const token = await helpers.getTestUserToken()
     const blog = await Blog.findOne({title: blogToDeleteTitle})
-    const response = await api.delete(`/api/blogs/${blog._id}`)
+    const response = await api.delete(`/api/blogs/${blog._id}`).set('Authorization', `Bearer ${token}`)
     expect(response.status).toBe(204)
   })
 
   test('no id found returns 202 status', async () => {
     jest.spyOn(Blog, 'findOne').mockResolvedValue(null)
-    const response = await api.delete('/api/blogs/000000000000')
+    const token = await helpers.getTestUserToken()
+    const response = await api.delete('/api/blogs/000000000000').set('Authorization', `Bearer ${token}`)
     expect(response.status).toBe(202)
   })
 })
@@ -134,8 +136,9 @@ describe('PUT methods', () => {
 
 beforeEach(async () => {
   await Blog.deleteMany({})
+  const user = await User.findOne({})
   for (let blog of initialBlogs) {
-    let newBlog = new Blog(blog)
+    let newBlog = new Blog({ ...blog, user: user.id })
     await newBlog.save()
   }
 })

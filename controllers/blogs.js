@@ -41,11 +41,14 @@ blogRouter.post('', async (request, response, next) => {
 blogRouter.delete('/:id', async (request, response, next) => {
   try {
     const idToDelete = new mongoose.Types.ObjectId(request.params.id)
-    const blog = await Blog.findByIdAndDelete(idToDelete)
-    if (blog) {
-      response.status(204).end()
-    } else {
+    const blog = await Blog.findById(idToDelete)
+    if (!blog) {
       response.status(202).end()
+    } else if (blog.user.toString() !== request.user.id.toString()) {
+      response.status(401).send({ error: 'user can\'t delete this blog '})
+    } else {
+      await Blog.findByIdAndDelete(idToDelete)
+      response.status(204).end()
     }
   } catch (error) {
     next(error)
